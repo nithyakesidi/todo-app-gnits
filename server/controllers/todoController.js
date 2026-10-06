@@ -3,7 +3,7 @@ const Todo = require("../models/Todo");
 // GET /api/todos
 const getTodos = async (req, res) => {
   try {
-    const todos = await Todo.find().sort({ createdAt: -1 });
+    const todos = await Todo.find();
     res.status(200).json(todos);
   } catch (err) {
     console.error(err);
@@ -14,19 +14,15 @@ const getTodos = async (req, res) => {
 // POST /api/todos
 const createTodo = async (req, res) => {
   try {
-    const { title } = req.body;
-
-    if (!title || !title.trim()) {
-      return res.status(400).json({ message: "Title is required" });
-    }
-
-    const todo = await Todo.create({
-      title: title.trim(),
-    });
-
+    const todo = await Todo.create(req.body);
     res.status(201).json(todo);
   } catch (err) {
     console.error(err);
+
+    if (err.name === "ValidationError") {
+      return res.status(400).json({ message: err.message });
+    }
+
     res.status(500).json({ message: err.message });
   }
 };
@@ -34,10 +30,14 @@ const createTodo = async (req, res) => {
 // PUT /api/todos/:id
 const updateTodo = async (req, res) => {
   try {
-    const todo = await Todo.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-    });
+    const todo = await Todo.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
 
     if (!todo) {
       return res.status(404).json({ message: "Todo not found" });
@@ -46,6 +46,11 @@ const updateTodo = async (req, res) => {
     res.status(200).json(todo);
   } catch (err) {
     console.error(err);
+
+    if (err.name === "ValidationError") {
+      return res.status(400).json({ message: err.message });
+    }
+
     res.status(500).json({ message: err.message });
   }
 };
@@ -59,11 +64,16 @@ const deleteTodo = async (req, res) => {
       return res.status(404).json({ message: "Todo not found" });
     }
 
-    res.status(200).json({ message: "Todo deleted successfully" });
+    res.status(200).json(todo);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: err.message });
   }
 };
 
-module.exports = { getTodos, createTodo, updateTodo, deleteTodo };
+module.exports = {
+  getTodos,
+  createTodo,
+  updateTodo,
+  deleteTodo,
+};
